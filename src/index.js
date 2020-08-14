@@ -2,6 +2,9 @@ const express = require("express")
 const path = require("path")
 const http = require("http")
 const socketio = require("socket.io")
+const Filter = require("bad-words")
+
+const { generateMessage } = require("./utils/messages")
 
 const app = express()
 const server = http.createServer(app)
@@ -17,20 +20,26 @@ app.use(express.static(publicDir))
 
 io.on("connection", (socket) => { //socket contem informação da conexão recém feita
     console.log("new connection")
-    socket.emit("message", WELCOME_MESSAGE) //manda eventos para clientes. eventos: nome, valor que aparece para cliente
-    socket.broadcast.emit("message", "new User joins")
+    socket.emit("message", generateMessage(WELCOME_MESSAGE)) //manda eventos para clientes. eventos: nome, valor que aparece para cliente
+    socket.broadcast.emit("message", generateMessage("new User joins"))
 
-    socket.on("sendMessageEvent", (message) => { 
-        io.emit("sendMessageEvent", message) // manda para todas as conexões
+    socket.on("message", (message, callback) => { //callback é para ack
+        const badwords = new Filter()
+        if(badwords.isProfane(message)) {
+            return callback("Don't use curse words or profanity")
+        }
+        io.emit("message", generateMessage(message)) // manda para todas as conexões
+        callback()
     })
 
-    socket.on("sendLocationEvent", (coords) => { 
-        socket.broadcast.emit("message", "Lat:" + coords.lat + ", Long:" + coords.long)
-        socket.broadcast.emit("message", "https://www.google.com/maps?q=" + coords.lat + "," + coords.long)
+    socket.on("sendLocationEvent", (coords, callback) => {
+        const location = "https://www.google.com/maps?q=" + coords.lat + "," + coords.long
+        io.emit("sendLocationMessageEvent", generateMessage(location))
+        callback()
     })
 
     socket.on("disconnect", () => {
-        io.emit("message", "user disconnect") // manda para todas as conexões
+        io.emit("message", generateMessage("user disconnect")) // manda para todas as conexões
     })
 })
 
