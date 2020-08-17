@@ -30,7 +30,9 @@ io.on("connection", (socket) => { //socket contem informação da conexão recé
         }
         socket.join(user.room) //só é usavel no back end, permite emitir eventos a apenas essa 'sala'
         socket.emit("message", generateMessage("Chat Amizade", WELCOME_MESSAGE + user.username)) //manda eventos para clientes. eventos: nome, valor que aparece para cliente
-        socket.broadcast.to(user.room).emit("message", generateMessage(user.username, user.username + " entrou na sala.")) // to é apenas para a sala em questão
+        socket.broadcast.to(user.room).emit("message", generateMessage("Chat Amizade", user.username + " entrou na sala.")) // to é apenas para a sala em questão
+        io.to(user.room).emit("roomData", {room: user.room, users: getUsersInRoom(user.room)}) //popular usuários na sala em tempo real
+        console.log(user)
         callback()
     }) 
 
@@ -40,7 +42,9 @@ io.on("connection", (socket) => { //socket contem informação da conexão recé
         if(badwords.isProfane(message)) {
             return callback("Linguajar!")
         }
-        io.to(user.room).emit("message", generateMessage(user.username, message)) // manda para todas as conexões
+        if(user) {
+            io.to(user.room).emit("message", generateMessage(user.username, message)) // manda para todas as conexões
+        }
         callback()
     })
 
@@ -55,7 +59,9 @@ io.on("connection", (socket) => { //socket contem informação da conexão recé
         const user = removeUser(socket.id)
         if(user) {
             io.to(user.room).emit("message", generateMessage("Chat Amizade",user.username+ " desconectou.")) // manda para todas as conexões
+            io.to(user.room).emit("roomData", {room: user.room, users: getUsersInRoom(user.room)})
         }
+        console.log(user)
     })
 })
 

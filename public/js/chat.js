@@ -8,8 +8,28 @@ const $messages = document.querySelector("#messages")
 
 const messageTemplate = document.querySelector("#messageTemplate").innerHTML
 const messageLocationTemplate = document.querySelector("#messageLocationTemplate").innerHTML
+const sidebarTemplate = document.querySelector("#sidebarTemplate").innerHTML
 
 const {username, room} = Qs.parse(location.search, {ignoreQueryPrefix: true}) //ignora ? em queries de busca
+
+const autoscroll = () => {
+    //altura da mensagem nova
+    const $newMessage = $messages.lastElementChild
+    const newMessageStyles = getComputedStyle($newMessage)
+    const newMessageMargin = parseInt(newMessageStyles.marginBottom)
+    const newMessageHeight = $newMessage.offsetHeight + newMessageMargin
+
+    //altura visivel
+    const visibleHeight = $messages.offsetHeight
+    const containerHeight = $messages.scrollHeight
+
+    //quantidade de scroll
+    const scrollOffset = ($messages.scrollTop+visibleHeight)*2
+
+    if(containerHeight - newMessageHeight < scrollOffset) { //vendo msg -1 -> indica se tá na ultima mensagem
+        $messages.scrollTop = $messages.scrollHeight
+    }
+}
 
 socket.on("message", (message) => {
     console.log(message)
@@ -18,6 +38,7 @@ socket.on("message", (message) => {
         message:message.text,
         createdAt: moment(message.createdAt).format("hh:mm:ss")
     }))
+    autoscroll()
 })
 
 socket.on("sendLocationMessageEvent", (message) => {
@@ -27,6 +48,15 @@ socket.on("sendLocationMessageEvent", (message) => {
         message:message.text,
         createdAt: moment(message.createdAt).format("hh:mm:ss")
     }))
+    autoscroll()
+})
+
+socket.on("roomData", ({room, users}) => {
+    const html = Mustache.render(sidebarTemplate, {
+        room,
+        users
+    })
+    document.querySelector("#sidebar").innerHTML = html
 })
 
 $form.addEventListener("submit", (event) => {
@@ -70,8 +100,8 @@ document.querySelector("#sendLocation").addEventListener("click", () => {
 })
 
 socket.emit("join", {username, room}, (error) => {
-    console.log(error)
     if(error) {
+        console.log(error)
         alert(error)
         location.href = "/"
     }

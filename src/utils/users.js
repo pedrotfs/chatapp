@@ -3,9 +3,7 @@ const users = []
 const addUser = ({id, username, room}) => {
     username = username.trim().toLowerCase()
     room = room.trim().toLowerCase()
-    console.log("0")
     if(!username || !room) {
-        console.log("1")
         return {
             error:"usuário e sala são obrigatórios"
         }
@@ -16,15 +14,12 @@ const addUser = ({id, username, room}) => {
     })
 
     if(existingUser) {
-        console.log("2")
         return {
             error: "usuário já existe na sala"
         }
     }
-
     const user = { id, username, room}
     users.push(user)
-    console.log(user)
     return {user}
 }
 
